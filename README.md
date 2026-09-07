@@ -1,69 +1,80 @@
-# github-grass
+# GitHub Grass
 
-Claude Code 플러그인. `/github-grass`를 입력하면 현재 `gh` CLI에 로그인된 계정(또는
-지정한 username)의 GitHub 잔디(contribution graph)를 터미널에 텍스트 히트맵으로 보여줍니다.
+> One slash command. Your grass, right in the terminal.
 
-## 구조
+![GitHub stars](https://img.shields.io/github/stars/minsu0707/github-grass?style=flat-square)
+![GitHub last commit](https://img.shields.io/github/last-commit/minsu0707/github-grass?style=flat-square)
+![GitHub repo size](https://img.shields.io/github/repo-size/minsu0707/github-grass?style=flat-square)
+![License](https://img.shields.io/github/license/minsu0707/github-grass?style=flat-square)
 
-```
-github-grass-plugin/
-├── .claude-plugin/
-│   └── plugin.json      # 플러그인 매니페스트
-├── commands/
-│   └── github-grass.md   # "/github-grass" 슬래시 커맨드 정의
-└── scripts/
-    └── grass.js           # gh api graphql 호출 + ASCII 렌더링
-```
-
-## 동작 방식
-
-1. `commands/github-grass.md`가 `/github-grass` 커맨드를 정의합니다.
-2. 이 커맨드는 `scripts/grass.js`를 Bash로 실행합니다.
-3. `grass.js`는 별도 토큰 없이 로컬에 이미 로그인된 `gh` CLI 인증을 그대로 사용해
-   GitHub GraphQL API(`contributionsCollection`)로 최근 365일 데이터를 가져오고,
-   요일×주 단위 격자에 `░▒▓█` 4단계 음영으로 렌더링합니다.
-
-## 요구 사항
-
-- [GitHub CLI(`gh`)](https://cli.github.com/) 설치 및 `gh auth login` 완료
-- Node.js (18+)
-
-## 설치 (영구, 매번 --plugin-dir 없이 쓰기)
-
-`claude plugin init`이 만드는 것과 같은 "skills-dir" 방식으로, 이 폴더를
-`~/.claude/skills/github-grass`에 심볼릭 링크해두면 새 `claude` 세션마다
-자동으로 로드됩니다.
+## Install in One Line
 
 ```bash
-ln -s "C:\Users\mylink\orca\projects\github-grass-plugin" "$HOME/.claude/skills/github-grass"
+curl -fsSL https://raw.githubusercontent.com/minsu0707/github-grass/main/install.sh | bash
 ```
 
-확인:
+This installs (or updates) the plugin into `~/.claude/skills/github-grass`, which
+Claude Code auto-loads as a plugin on the next session — no marketplace
+registration, no `--plugin-dir` flag.
 
-```bash
-claude plugin list   # "github-grass@skills-dir ... loaded" 로 떠야 함
-```
+## Run in Claude Code
 
-이후 새로 여는 `claude` 세션에서:
+Restart Claude Code once after installing, then:
 
-```
+```text
 /github-grass
-/github-grass octocat   # 다른 사용자의 잔디를 보고 싶을 때
+/github-grass octocat   # someone else's grass
 ```
 
-## 일회성으로만 테스트하기
+## What It Is
 
-영구 설치 없이 이번 세션에서만 확인하려면:
+GitHub Grass is a Claude Code plugin that renders your GitHub contribution
+graph ("잔디") as a text heatmap, right where you're already working.
+
+- No token setup — reuses your existing `gh auth login` session
+- No network call from Claude itself — the plugin shells out to `gh api graphql`
+- Matches the count GitHub shows on your profile (local-timezone day
+  boundaries, not a naive rolling 24h window)
+
+## Core Features
+
+- Last 365 days, rendered as a week × weekday grid with 5 shade levels (`  ` `░░` `▒▒` `▓▓` `██`)
+- Month labels aligned above the correct week
+- Total contribution count in the header, matching your GitHub profile
+- Optional `[github-username]` argument to view anyone's public grass
+
+## Requirements
+
+- [GitHub CLI (`gh`)](https://cli.github.com/), authenticated via `gh auth login`
+- Node.js 18+
+- git (for the installer)
+
+## How It Works
+
+1. `commands/github-grass.md` defines the `/github-grass` slash command.
+2. It runs `scripts/grass.js` via the plugin's pre-approved `Bash` tool access.
+3. `grass.js` calls `gh api graphql` for `contributionsCollection`, bucketed
+   over the last 365 local-calendar days, and renders the heatmap as plain text.
+4. Claude Code shows that output back to you verbatim, inside a code block.
+
+## Repository Layout
+
+- `.claude-plugin/plugin.json`: plugin manifest
+- `commands/github-grass.md`: the `/github-grass` command definition
+- `scripts/grass.js`: fetches and renders the contribution heatmap
+- `install.sh`: one-line installer (clones into `~/.claude/skills/github-grass`)
+
+## Manual / Local Testing
+
+Try it without installing anything, pointed straight at a local checkout:
 
 ```bash
-claude --plugin-dir "C:\Users\mylink\orca\projects\github-grass-plugin"
+claude --plugin-dir "/path/to/github-grass"
 ```
 
-## 스크립트만 단독 실행
-
-Claude Code 없이 스크립트만 확인하고 싶다면:
+Or run the renderer directly, with no Claude Code involved:
 
 ```bash
-node scripts/grass.js            # 현재 gh 로그인 계정
-node scripts/grass.js octocat    # 특정 사용자
+node scripts/grass.js            # your gh-authenticated account
+node scripts/grass.js octocat    # a specific user
 ```

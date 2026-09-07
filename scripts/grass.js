@@ -10,7 +10,10 @@
 
 import { execFileSync } from "node:child_process";
 
-const LEVELS = [" ", "░", "▒", "▓", "█"];
+// Two characters per day so each cell reads as an actual square instead of
+// a thin sliver (monospace glyphs are taller than they are wide).
+const LEVELS = ["  ", "░░", "▒▒", "▓▓", "██"];
+
 // Thresholds for mapping a raw contribution count to one of the 5 levels
 // above. Roughly mirrors GitHub's own quartile buckets.
 function levelFor(count, max) {
@@ -52,9 +55,16 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 }`;
 
 function fetchCalendar(login) {
+  // Match GitHub's own "last year" window: 365 full calendar days ending
+  // today, using the machine's local timezone (GitHub's contribution graph
+  // is bucketed by the viewer's local day, not UTC) — a rolling
+  // 24h-from-now window, or UTC day boundaries, both drift the total off
+  // by however many contributions land in the partial day at either edge.
   const to = new Date();
+  to.setHours(23, 59, 59, 999);
   const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - 364);
+  from.setDate(from.getDate() - 364);
+  from.setHours(0, 0, 0, 0);
 
   const out = gh([
     "api",
@@ -79,8 +89,8 @@ function fetchCalendar(login) {
 }
 
 function monthLabelRow(weeks) {
-  // one label slot per week-column, filled in when that week is the first
-  // week to contain the 1st (or is the very first week) of a new month.
+  // one label slot per week-column (2 chars wide, matching a grid cell),
+  // filled in when that week is the first week to contain a new month.
   const labels = new Array(weeks.length).fill("  ");
   let lastMonth = -1;
   weeks.forEach((week, i) => {
@@ -103,7 +113,7 @@ function render(calendar, login) {
     ...weeks.flatMap((w) => w.contributionDays.map((d) => d.contributionCount))
   );
 
-  const grid = Array.from({ length: 7 }, () => new Array(weeks.length).fill(" "));
+  const grid = Array.from({ length: 7 }, () => new Array(weeks.length).fill("  "));
   weeks.forEach((week, col) => {
     week.contributionDays.forEach((day) => {
       grid[day.weekday][col] = LEVELS[levelFor(day.contributionCount, max)];
@@ -116,9 +126,11 @@ function render(calendar, login) {
   const lines = [];
   lines.push(`GitHub contributions for @${login} — last 365 days (${totalContributions} total)`);
   lines.push("");
-  lines.push("    " + monthLabels.join(""));
+  lines.push("     " + monthLabels.join(""));
   for (let r = 0; r < 7; r++) {
-    const label = r % 2 === 1 ? dayLabels[r].padEnd(4) : "    ";
+    // label every other row (Mon/Wed/Fri), same convention GitHub's own
+    // graph uses, so the day column doesn't get too noisy.
+    const label = r % 2 === 1 ? dayLabels[r].padEnd(5) : "     ";
     lines.push(label + grid[r].join(""));
   }
   lines.push("");
