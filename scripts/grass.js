@@ -126,15 +126,12 @@ function render(calendar, login) {
   const lines = [];
   lines.push(`GitHub contributions for @${login} — last 365 days (${totalContributions} total)`);
   lines.push("");
-  // Join columns with a single space so each week reads as its own cell
-  // instead of bleeding into its neighbors — otherwise same-shade weeks
-  // merge into one indistinguishable strip.
-  lines.push("     " + monthLabels.join(" "));
+  lines.push("     " + monthLabels.join(""));
   for (let r = 0; r < 7; r++) {
     // label every other row (Mon/Wed/Fri), same convention GitHub's own
     // graph uses, so the day column doesn't get too noisy.
     const label = r % 2 === 1 ? dayLabels[r].padEnd(5) : "     ";
-    lines.push(label + grid[r].join(" "));
+    lines.push(label + grid[r].join(""));
   }
   lines.push("");
   lines.push("Less " + LEVELS.join(" ") + " More");
