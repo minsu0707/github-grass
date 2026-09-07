@@ -1,0 +1,9 @@
+{
+  "name": "github-grass",
+  "displayName": "GitHub Grass",
+  "description": "Show your GitHub contribution graph (잔디) as a terminal heatmap",
+  "version": "1.0.0",
+  "author": {
+    "name": "minsu0707"
+  }
+}
