@@ -28,19 +28,35 @@ github-grass-plugin/
 - [GitHub CLI(`gh`)](https://cli.github.com/) 설치 및 `gh auth login` 완료
 - Node.js (18+)
 
-## 로컬에서 테스트하기
+## 설치 (영구, 매번 --plugin-dir 없이 쓰기)
 
-배포 없이 바로 사용해보려면, 이 플러그인 폴더를 가리켜서 Claude Code를 실행하세요.
+`claude plugin init`이 만드는 것과 같은 "skills-dir" 방식으로, 이 폴더를
+`~/.claude/skills/github-grass`에 심볼릭 링크해두면 새 `claude` 세션마다
+자동으로 로드됩니다.
 
 ```bash
-claude --plugin-dir "C:\Users\mylink\orca\projects\github-grass-plugin"
+ln -s "C:\Users\mylink\orca\projects\github-grass-plugin" "$HOME/.claude/skills/github-grass"
 ```
 
-그 다음 세션 안에서:
+확인:
+
+```bash
+claude plugin list   # "github-grass@skills-dir ... loaded" 로 떠야 함
+```
+
+이후 새로 여는 `claude` 세션에서:
 
 ```
 /github-grass
 /github-grass octocat   # 다른 사용자의 잔디를 보고 싶을 때
+```
+
+## 일회성으로만 테스트하기
+
+영구 설치 없이 이번 세션에서만 확인하려면:
+
+```bash
+claude --plugin-dir "C:\Users\mylink\orca\projects\github-grass-plugin"
 ```
 
 ## 스크립트만 단독 실행
