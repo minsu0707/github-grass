@@ -4,8 +4,14 @@
  * as a text/ASCII heatmap in the terminal, using the local `gh` CLI's
  * existing auth (no token handling needed).
  *
- * Usage: node grass.js [github-username]
+ * Usage: node grass.js [github-username] [--weeks=N | --full]
  * If no username is given, uses the currently active `gh auth` account.
+ *
+ * By default only the most recent DEFAULT_WEEKS weeks are drawn as a grid
+ * — a full 53-week year is ~106 columns wide and wraps/garbles in a split
+ * or narrow terminal pane. The contribution *total* in the header is
+ * always the full last-365-days count regardless of how many weeks are
+ * drawn. Pass --full (or --weeks=53) to draw the whole year anyway.
  */
 
 import { execFileSync } from "node:child_process";
@@ -13,6 +19,8 @@ import { execFileSync } from "node:child_process";
 // Two characters per day so each cell reads as an actual square instead of
 // a thin sliver (monospace glyphs are taller than they are wide).
 const LEVELS = ["  ", "░░", "▒▒", "▓▓", "██"];
+
+const DEFAULT_WEEKS = 13; // ~3 months — safe width for a split terminal pane
 
 // Thresholds for mapping a raw contribution count to one of the 5 levels
 // above. Roughly mirrors GitHub's own quartile buckets.
@@ -28,6 +36,22 @@ function levelFor(count, max) {
 
 function gh(args) {
   return execFileSync("gh", args, { encoding: "utf8" });
+}
+
+function parseArgs(argv) {
+  let username;
+  let weeksToShow = DEFAULT_WEEKS;
+  for (const arg of argv) {
+    if (arg === "--full" || arg === "full") {
+      weeksToShow = null; // null = show everything fetched
+    } else if (arg.startsWith("--weeks=")) {
+      const n = parseInt(arg.slice("--weeks=".length), 10);
+      if (Number.isFinite(n) && n > 0) weeksToShow = n;
+    } else if (!username) {
+      username = arg;
+    }
+  }
+  return { username, weeksToShow };
 }
 
 function getLogin(explicit) {
@@ -106,8 +130,14 @@ function monthLabelRow(weeks) {
   return labels;
 }
 
-function render(calendar, login) {
-  const { weeks, totalContributions } = calendar;
+function render(calendar, login, weeksToShow) {
+  const { totalContributions } = calendar;
+  const allWeeks = calendar.weeks;
+  const weeks =
+    weeksToShow && weeksToShow < allWeeks.length
+      ? allWeeks.slice(allWeeks.length - weeksToShow)
+      : allWeeks;
+
   const max = Math.max(
     0,
     ...weeks.flatMap((w) => w.contributionDays.map((d) => d.contributionCount))
@@ -123,8 +153,15 @@ function render(calendar, login) {
   const monthLabels = monthLabelRow(weeks);
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  const rangeNote =
+    weeks.length < allWeeks.length
+      ? ` — showing last ${weeks.length} weeks (pass --full for the whole year)`
+      : "";
+
   const lines = [];
-  lines.push(`GitHub contributions for @${login} — last 365 days (${totalContributions} total)`);
+  lines.push(
+    `GitHub contributions for @${login} — last 365 days (${totalContributions} total)${rangeNote}`
+  );
   lines.push("");
   lines.push("     " + monthLabels.join(""));
   for (let r = 0; r < 7; r++) {
@@ -139,10 +176,10 @@ function render(calendar, login) {
 }
 
 function main() {
-  const explicit = process.argv[2];
-  const login = getLogin(explicit);
+  const { username, weeksToShow } = parseArgs(process.argv.slice(2));
+  const login = getLogin(username);
   const calendar = fetchCalendar(login);
-  console.log(render(calendar, login));
+  console.log(render(calendar, login, weeksToShow));
 }
 
 main();

@@ -6,11 +6,21 @@ description: Show the user's GitHub contribution graph ("잔디"/grass) as a tex
 # GitHub Grass
 
 Run this exact command via the Bash tool. If the user gave you a GitHub
-username, pass it as the argument; otherwise pass no argument and it falls
-back to the locally authenticated `gh` account:
+username, pass it as the first argument; otherwise pass no username and it
+falls back to the locally authenticated `gh` account:
 
 ```
 node "__SCRIPT_PATH__" [username]
+```
+
+By default this only draws the last ~13 weeks as a grid (a full year is
+~106 columns wide and garbles in a narrow or split terminal pane) — the
+contribution *total* shown is always the accurate last-365-days count
+regardless. If the user explicitly asks for the full year / whole grass /
+more weeks, add `--full` (or `--weeks=N` for a specific number of weeks):
+
+```
+node "__SCRIPT_PATH__" [username] --full
 ```
 
 It uses the local `gh` CLI's existing login — do not pass a token, do not ask

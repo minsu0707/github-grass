@@ -1,6 +1,6 @@
 ---
 description: Show your GitHub contribution graph (잔디) as a terminal heatmap
-argument-hint: "[github-username]"
+argument-hint: "[github-username] [--full | --weeks=N]"
 allowed-tools: Bash
 ---
 
